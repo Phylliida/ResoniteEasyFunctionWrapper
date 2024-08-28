@@ -7,8 +7,8 @@
     <ProjectGuid>{2A092467-467A-4DE3-9E84-27A610ABD63C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RefhackCasts</RootNamespace>
-    <AssemblyName>RefhackCasts</AssemblyName>
+    <RootNamespace>ResoniteWrapper</RootNamespace>
+    <AssemblyName>ResoniteWrapper</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -52,6 +52,9 @@
     <Reference Include="ProtoFlux.Nodes.FrooxEngine">
       <HintPath>..\..\..\ProtoFlux.Nodes.FrooxEngine.dll</HintPath>
     </Reference>
+    <Reference Include="ProtoFluxBindings">
+      <HintPath>..\..\..\..\..\RefhackCasts-main\ProtoFluxBindings.dll</HintPath>
+    </Reference>
     <Reference Include="ResoniteHotReloadLib">
       <HintPath>..\..\..\ResoniteHotReloadLib.dll</HintPath>
     </Reference>
@@ -77,7 +80,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="WebasmRunner.cs" />
+    <Compile Include="ResoniteWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
