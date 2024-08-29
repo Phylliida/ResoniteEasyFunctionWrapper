@@ -26,13 +26,14 @@ using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network;
 using System.Configuration;
 using ProtoFlux.Runtimes.Execution;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Async;
 // tmp
 
 namespace ResoniteWrapper
 {
     public class SimpleMod
     {
-        public void Bees(string wow, int bees, float ok, Slot item, 
+        public static void Bees(string wow, int bees, float ok, Slot item, 
             out Dictionary<String, String> out1, out float out2, out Grabbable out3)
         {
             out1 = new Dictionary<string, string>();
@@ -48,14 +49,14 @@ namespace ResoniteWrapper
             }
         }
 
-        public string readFromDict(Dictionary<string, string> dict, string key)
+        public static string readFromDict(Dictionary<string, string> dict, string key)
         {
             return dict[key];
         }
     }
 
 
-    public class WebasmRunner : ResoniteMod
+    public class ResoniteWrapper : ResoniteMod
     {
         static string RESONITE_WRAPPER_PATH = "Generate Wrapper Flux";
 
@@ -76,13 +77,34 @@ namespace ResoniteWrapper
             public int paramIndex;
             public bool isValidResoniteType;
             public Type resoniteType;
+
+            static bool isTypeValidResoniteType(Type type)
+            {
+                try
+                {
+                    Msg("testing type " + type);
+                    // extra checks internal to resonite
+                    bool result = typeof(DynamicValueVariable<>).MakeGenericType(type).IsValidGenericType(validForInstantiation: true) ||
+                     typeof(DynamicReferenceVariable<>).MakeGenericType(type).IsValidGenericType(validForInstantiation: true);
+
+                    Msg("got result " + result);
+                    return result;
+
+                }
+                catch (ArgumentException) // happens if invalid type
+                {
+                    Msg("got exception for type " + type);
+                    return false;
+                }
+            }
+
             public VariableInfo(string name, Type type, VariableKind variableKind, int paramIndex = 0)
             {
                 this.name = name;
                 this.type = type;
                 this.variableKind = variableKind;
                 this.paramIndex = paramIndex;
-                this.isValidResoniteType = FrooxEngine.Engine.Current.WorldManager.FocusedWorld.Types.IsSupported(type);
+                this.isValidResoniteType = isTypeValidResoniteType(type);
                 this.resoniteType = this.isValidResoniteType ? type : typeof(string);
             }
         }
@@ -208,6 +230,7 @@ namespace ResoniteWrapper
             returnVars = new List<VariableInfo>();
             // Modified from https://stackoverflow.com/a/28772413
             Type returnType = method.ReturnType;
+            Msg(returnType.ToString());
             if (returnType.IsGenericType)
             {
                 var genType = returnType.GetGenericTypeDefinition();
@@ -220,9 +243,10 @@ namespace ResoniteWrapper
                     || genType == typeof(Tuple<,,,,,,>)
                     || genType == typeof(Tuple<,,,,,,,>))
                 {
-                    for (var i = 0; i < returnType.GetGenericArguments().Length; i++)
+                    for (var i = 0; i < genType.GetGenericArguments().Length; i++)
                     {
-                        returnVars.Add(new VariableInfo(i.ToString(), returnType.GetGenericArguments()[i], VariableKind.TupleFromReturn, i));
+                        Msg(genType.GetGenericArguments()[i].ToString() + "arg");
+                        returnVars.Add(new VariableInfo(i.ToString(), genType.GetGenericArguments()[i], VariableKind.TupleFromReturn, i));
                     }
                 }
                 else
@@ -230,7 +254,7 @@ namespace ResoniteWrapper
                     returnVars.Add(new VariableInfo("0", returnType, VariableKind.ReturnValue));
                 }
             }
-            else
+            else if(returnType != typeof(void)) // don't use void as a type
             {
                 returnVars.Add(new VariableInfo("0", returnType, VariableKind.ReturnValue));
             }
@@ -240,16 +264,18 @@ namespace ResoniteWrapper
             for (int i = 0; i < methodParams.Length; i++)
             {
                 ParameterInfo param = methodParams[i];
+                Msg(param.Name + " " + param.ParameterType);
                 // out type
                 if (param.ParameterType.IsByRef && param.IsOut)
                 {
-                    returnVars.Add(new VariableInfo(param.Name, param.ParameterType, VariableKind.Parameter, paramIndex: i));
+                    // GetElementType is needed for byref types otherwise they have a & at the end and it confuses things
+                    returnVars.Add(new VariableInfo(param.Name, param.ParameterType.GetElementType(), VariableKind.Parameter, paramIndex: i));
                 }
                 // ref type, its an input and output
                 else if (param.ParameterType.IsByRef && !param.IsOut)
                 {
-                    inputVars.Add(new VariableInfo(param.Name, param.ParameterType, VariableKind.Parameter, paramIndex: i));
-                    returnVars.Add(new VariableInfo(param.Name, param.ParameterType, VariableKind.Parameter, paramIndex: i));
+                    inputVars.Add(new VariableInfo(param.Name, param.ParameterType.GetElementType(), VariableKind.Parameter, paramIndex: i));
+                    returnVars.Add(new VariableInfo(param.Name, param.ParameterType.GetElementType(), VariableKind.Parameter, paramIndex: i));
                 }
                 // input type
                 else if (!param.IsOut)
@@ -277,6 +303,7 @@ namespace ResoniteWrapper
 
             public void Dispose()
             {
+                Msg("Cleaning up " + GetUri());
                 RemoveMenuOption();
             }
 
@@ -409,13 +436,34 @@ namespace ResoniteWrapper
             }
             void CreateVarsForVar(Slot slot, string spaceName, VariableInfo var)
             {
-                MethodInfo writeMethod = typeof(Slot).GetMethod(nameof(slot.AttachComponent));
-                MethodInfo genericWriteMethod = writeMethod.MakeGenericMethod(var.resoniteType);
-                FrooxEngine.Component attached = (FrooxEngine.Component)genericWriteMethod.Invoke(slot, null);
+                Type dynvarType = typeof(DynamicValueVariable<>).MakeGenericType(var.resoniteType);
+                Msg("type is valid " + dynvarType.IsValidGenericType(validForInstantiation: true));
 
+                if (!dynvarType.IsValidGenericType(validForInstantiation: true))
+                {
+                    Msg("not valid, using reference variable");
+                    dynvarType = typeof(DynamicReferenceVariable<>).MakeGenericType(var.resoniteType);
+                }
+                Msg("now type is valid" + dynvarType.IsValidGenericType(validForInstantiation: true));
+                Msg("starting");
+                Msg("Slot" + slot.ReferenceID + " space name " + spaceName + " var " + var.name + " type " + var.resoniteType);
+                Msg(" atta Slot" + slot.ReferenceID + " space name " + spaceName + " var " + var.name + " type " + var.resoniteType);
+                var attached = slot.AttachComponent(dynvarType);
+                Msg("sSlot" + attached + " bb " + slot.ReferenceID + " space name " + spaceName + " var " + var.name + " type " + var.resoniteType);                
+
+                FieldInfo field = attached.GetType().GetField("VariableName");
+                Msg("field " + field);
+
+                Sync<string> variableName = (Sync<string>)field.GetValue(attached);
+                variableName.Value = spaceName + "/" + var.name;
+                Msg("done write");
+                //Msg("field get " + field.GetValue(attached).GetType());
+                //Msg("field get direct " + field.GetValueDirect(typedR));
                 // weird stuff to let us write to a field even tho we don't know generic type
-                var syncField = attached.GetType().GetProperty("VariableName").GetValue(attached);
-                syncField.GetType().GetProperty("Value").SetValue(syncField, spaceName + "/" + var.name);
+                // var syncField = attached.GetType().GetField("VariableName").GetValueDirect(attached);
+                // Msg("b " + syncField + " slot " + slot.ReferenceID + " space name " + spaceName + " var " + var.name + " type " + var.resoniteType);
+
+                // typeof(Sync<String>).GetField("Value").SetValue(syncField, spaceName + "/" + var.name);
             }
 
             public Uri GetUri()
@@ -440,7 +488,7 @@ namespace ResoniteWrapper
                 WebsocketClient client = template.AttachComponent<WebsocketClient>();
                 client.URL.Value = GetUri();
 
-                DynamicValueVariable<WebsocketClient> wsVar = template.AttachComponent<DynamicValueVariable<WebsocketClient>>();
+                DynamicReferenceVariable<WebsocketClient> wsVar = template.AttachComponent<DynamicReferenceVariable<WebsocketClient>>();
                 wsVar.VariableName.Value = method.Name + "/" + "FAKE_WS_CLIENT";
                 return template;
             }
@@ -477,6 +525,12 @@ namespace ResoniteWrapper
 
                 WebsocketTextMessageSender sender = CreateSlotWithComponent<WebsocketTextMessageSender>(holder, "WebsocketTextMessageSender", new float3(0.2f, 0.28f, 0), addToSlot);
                 sender.Client.Value = wsClientVar.Value.ReferenceID;
+
+                Slot headSlot = FrooxEngine.Engine.Current.WorldManager.FocusedWorld.LocalUser.GetBodyNodeSlot(BodyNode.Head);
+                if (headSlot != null)
+                {
+                    holder.GlobalPosition = headSlot.GlobalPosition;
+                }
                 return holder;
             }
 
@@ -488,7 +542,7 @@ namespace ResoniteWrapper
             public void AddReloadMenuOption()
             {
                 // modified from https://github.com/Nytra/ResoniteHotReloadLib/blob/11bc8c4167387d75fda0eed07237fee5424cb33c/HotReloader.cs#L344
-                Debug("Begin Add Generate Flux Menu Option, for " + modNamespace + " for function " + name);
+                Msg("Begin Add Generate Flux Menu Option, for " + modNamespace + " for function " + name);
                 if (!FrooxEngine.Engine.Current.IsInitialized)
                 {
                     FrooxEngine.Engine.Current.RunPostInit(AddActionDelegate);
@@ -504,19 +558,21 @@ namespace ResoniteWrapper
                         x.Destroy();
 
                         Msg("Pressed generate flux for " + GetLabelString());
+
+                        Slot result = CreateFlux(false);
                     });
                 }
             }
 
             public bool RemoveMenuOption()
             {
-                Debug("Begin RemoveMenuOption");
+                Msg("Begin RemoveMenuOption");
                 object categoryNode = AccessTools.Field(typeof(DevCreateNewForm), "root").GetValue(null);
                 object subcategory = AccessTools.Method(categoryNode.GetType(), "GetSubcategory").Invoke(categoryNode, new object[] { RESONITE_WRAPPER_PATH });
                 System.Collections.IList elements = (System.Collections.IList)AccessTools.Field(categoryNode.GetType(), "_elements").GetValue(subcategory);
                 if (elements == null)
                 {
-                    Debug("Elements is null!");
+                    Msg("Elements is null!");
                     return false;
                 }
                 foreach (object categoryItem in elements)
@@ -526,7 +582,7 @@ namespace ResoniteWrapper
                     if (name == GetLabelString())
                     {
                         elements.Remove(categoryItem);
-                        Debug("Menu option removed.");
+                        Msg("Menu option removed for " + GetLabelString());
                         return true;
                     }
                 }
@@ -550,7 +606,7 @@ namespace ResoniteWrapper
 
         public static Dictionary<Uri, WrappedMethod> wrappedMethods = new Dictionary<Uri, WrappedMethod>();
 
-        public static Dictionary<Tuple<string, string>, List<Uri>> wrappedMethodLookup = new Dictionary<Tuple<Type, string>, List<Uri>>();
+        public static Dictionary<Tuple<string, string>, List<Uri>> wrappedMethodLookup = new Dictionary<Tuple<string, string>, List<Uri>>();
 
         public static void WrapClass(Type classType, string modNamespace)
         {
@@ -645,8 +701,9 @@ namespace ResoniteWrapper
             // This runs in the current assembly (i.e. the assembly which invokes the Hot Reload)
             harmony.UnpatchAll();
             // This is where you unload your mod, free up memory, and remove Harmony patches etc.
-
+            Msg("Cleaning up functions");
             CleanupAllWrappedFunctions();
+            Msg("Cleaned");
         }
 
         static void OnHotReload(ResoniteMod modInstance)
@@ -674,7 +731,7 @@ namespace ResoniteWrapper
                     {
                         if (websocketClient.URL.Value.ToString().StartsWith(MOD_PREFIX))
                         {
-                            Debug("Got websocket with url " + websocketClient.URL);
+                            Msg("Got websocket with url " + websocketClient.URL);
                             if (wrappedMethods.ContainsKey(websocketClient.URL))
                             {
                                 wrappedMethods[websocketClient.URL].CallMethod(websocketClient.Slot, globalTypeLookup);

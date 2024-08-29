@@ -1,0 +1,2 @@
+C:\Users\yams\Desktop\prog\ResoniteWrapper\ResoniteWrapper\ResoniteWrapper\ResoniteWrapper\obj\Debug\ResoniteWrapper.csproj.AssemblyReference.cache
+C:\Users\yams\Desktop\prog\ResoniteWrapper\ResoniteWrapper\ResoniteWrapper\ResoniteWrapper\obj\Debug\ResoniteWrapper.csproj.CoreCompileInputs.cache
