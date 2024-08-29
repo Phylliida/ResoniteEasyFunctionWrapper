@@ -27,6 +27,7 @@ using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network;
 using System.Configuration;
 using ProtoFlux.Runtimes.Execution;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Async;
+using System.Runtime.InteropServices.WindowsRuntime;
 // tmp
 
 namespace ResoniteWrapper
@@ -76,9 +77,11 @@ namespace ResoniteWrapper
             public VariableKind variableKind;
             public int paramIndex;
             public bool isValidResoniteType;
+            public bool isResoniteTypeValueType;
             public Type resoniteType;
 
-            static bool isTypeValidResoniteType(Type type)
+
+            static bool isTypeValidResoniteType(Type type, out bool isValueType)
             {
                 try
                 {
@@ -87,12 +90,14 @@ namespace ResoniteWrapper
                     bool result = typeof(DynamicValueVariable<>).MakeGenericType(type).IsValidGenericType(validForInstantiation: true) ||
                      typeof(DynamicReferenceVariable<>).MakeGenericType(type).IsValidGenericType(validForInstantiation: true);
 
+                    isValueType = typeof(DynamicValueVariable<>).MakeGenericType(type).IsValidGenericType(validForInstantiation: true) && type != typeof(System.String);
                     Msg("got result " + result);
                     return result;
 
                 }
                 catch (ArgumentException) // happens if invalid type
                 {
+                    isValueType = false;
                     Msg("got exception for type " + type);
                     return false;
                 }
@@ -104,7 +109,7 @@ namespace ResoniteWrapper
                 this.type = type;
                 this.variableKind = variableKind;
                 this.paramIndex = paramIndex;
-                this.isValidResoniteType = isTypeValidResoniteType(type);
+                this.isValidResoniteType = isTypeValidResoniteType(type, out this.isResoniteTypeValueType);
                 this.resoniteType = this.isValidResoniteType ? type : typeof(string);
             }
         }
@@ -436,14 +441,17 @@ namespace ResoniteWrapper
             }
             void CreateVarsForVar(Slot slot, string spaceName, VariableInfo var)
             {
-                Type dynvarType = typeof(DynamicValueVariable<>).MakeGenericType(var.resoniteType);
-                Msg("type is valid " + dynvarType.IsValidGenericType(validForInstantiation: true));
-
-                if (!dynvarType.IsValidGenericType(validForInstantiation: true))
+                Type dynvarType;
+                // DynamicValueVariables are weird like this and string is value but everywhere else is a object
+                if (var.isResoniteTypeValueType || var.resoniteType == typeof(System.String))
                 {
-                    Msg("not valid, using reference variable");
+                    dynvarType = typeof(DynamicValueVariable<>).MakeGenericType(var.resoniteType);
+                }
+                else
+                {
                     dynvarType = typeof(DynamicReferenceVariable<>).MakeGenericType(var.resoniteType);
                 }
+
                 Msg("now type is valid" + dynvarType.IsValidGenericType(validForInstantiation: true));
                 Msg("starting");
                 Msg("Slot" + slot.ReferenceID + " space name " + spaceName + " var " + var.name + " type " + var.resoniteType);
@@ -513,24 +521,214 @@ namespace ResoniteWrapper
                 {
                     addToSlot = holder.AddSlot("Monopacked flux");
                 }
-                AsyncCallRelay relay = CreateSlotWithComponent<AsyncCallRelay>(holder, "AsyncCallRelay", new float3(-0.75f, 0.38f, 0), null);
+                AsyncCallRelay relay = CreateSlotWithComponent<AsyncCallRelay>(holder, "AsyncCallRelay", new float3(-0.3f, 0.19f, 0), null);
                 
-                RefObjectInput<Slot> templateInput = CreateSlotWithComponent<RefObjectInput<Slot>>(holder, "RefObjectInput`1", new float3(-0.57f, 0.26f, 0f), addToSlot);
+                RefObjectInput<Slot> templateInput = CreateSlotWithComponent<RefObjectInput<Slot>>(holder, "RefObjectInput`1", new float3(-0.28f, 0.37f, 0.02f), addToSlot);
                 templateInput.Target.Value = template.ReferenceID;
 
                 ReadDynamicObjectVariable<WebsocketClient> wsClientVar = CreateSlotWithComponent<ReadDynamicObjectVariable<WebsocketClient>>(holder, "ReadDynamicObjectVariable`1", new float3(0, 0.3f, 0), addToSlot);
                 ValueObjectInput<string> wsClientId = CreateSlotWithComponent<ValueObjectInput<string>>(holder, "ValueObjectInput`1", new float3(-0.223f, 0.29f, 0), addToSlot);
+                wsClientId.Value.Value = method.Name + "/" + "FAKE_WS_CLIENT";
                 wsClientVar.Source.Value = templateInput.ReferenceID;
                 wsClientVar.Path.Value = wsClientId.ReferenceID;
 
                 WebsocketTextMessageSender sender = CreateSlotWithComponent<WebsocketTextMessageSender>(holder, "WebsocketTextMessageSender", new float3(0.2f, 0.28f, 0), addToSlot);
                 sender.Client.Value = wsClientVar.Value.ReferenceID;
 
+                SyncRef<INodeOperation> curNode = relay.OnTriggered;
+
+                float3 offset = new float3(0, -0.17f, 0);
+                float3 curOffset = wsClientVar.Slot.LocalPosition;
+                foreach (VariableInfo inputVar in inputVars)
+                {
+                    curOffset += offset;
+                    Type writeDynvarType;
+                    string writeName;
+                    Msg("starting with type " + inputVar.resoniteType.ToString() + " with name " + inputVar.name);
+                    if (inputVar.isResoniteTypeValueType)
+                    {
+                        writeDynvarType = typeof(WriteDynamicValueVariable<>).MakeGenericType(inputVar.resoniteType);
+                        writeName = "WriteDynamicValueVariable`1";
+                    }
+                    else
+                    {
+                        writeDynvarType = typeof(WriteDynamicObjectVariable<>).MakeGenericType(inputVar.resoniteType);
+                        writeName = "WriteDynamicObjectVariable`1";
+                    }
+                    Msg("dynvar");
+                    Slot inputVarSlot = addToSlot;
+                    if (inputVarSlot == null)
+                    {
+                        inputVarSlot = holder.AddSlot(writeName);
+                        inputVarSlot.Position_Field.Value = curOffset;
+                    }
+                    var attachedInputVarWriter = inputVarSlot.AttachComponent(writeDynvarType);
+
+                    Msg("Attached");
+                    // Write to Target (uses field holding template)
+                    var targetField = attachedInputVarWriter.GetType().GetField("Target").GetValue(attachedInputVarWriter);
+                    targetField.GetType().GetProperty("Value").SetValue(targetField, templateInput.ReferenceID);
+
+                    Msg("Target");
+                    // Create Path field and write to Path
+                    ValueObjectInput<string> inputVarId = CreateSlotWithComponent<ValueObjectInput<string>>(holder, "ValueObjectInput`1", curOffset + new float3(-0.223f, -0.01f, -0.01f), addToSlot);
+                    inputVarId.Value.Value = method.Name + "/" + inputVar.name;
+                    var pathField = attachedInputVarWriter.GetType().GetField("Path").GetValue(attachedInputVarWriter);
+                    pathField.GetType().GetProperty("Value").SetValue(pathField, inputVarId.ReferenceID);
+                    Msg("Relay");
+
+                    // Create Relay
+                    Type relayType;
+                    if (inputVar.isResoniteTypeValueType)
+                    {
+                        relayType = typeof(ValueRelay<>).MakeGenericType(inputVar.resoniteType);
+                    }
+                    else
+                    {
+                        relayType = typeof(ObjectRelay<>).MakeGenericType(inputVar.resoniteType);
+                    }
+                    Slot relaySlot = addToSlot;
+                    if (relaySlot == null)
+                    {
+                        relaySlot = holder.AddSlot("Relay:" + inputVar.name);
+                        relaySlot.Position_Field.Value = curOffset + new float3(-0.3f, -0.07f, 0);
+                    }
+                    var relayComponent = relaySlot.AttachComponent(relayType);
+                    var relayRefId = relayComponent.GetType().GetProperty("ReferenceID").GetValue(relayComponent);
+                    Msg("relay made");
+
+                    // Write relay to Value
+                    var valueField = attachedInputVarWriter.GetType().GetField("Value").GetValue(attachedInputVarWriter);
+                    valueField.GetType().GetProperty("Value").SetValue(valueField, relayRefId);
+                    Msg("relay write");
+
+                    curNode.Value = (RefID)attachedInputVarWriter.GetType().GetProperty("ReferenceID").GetValue(attachedInputVarWriter);
+                    curNode = (SyncRef<INodeOperation>)attachedInputVarWriter.GetType().GetField("OnSuccess").GetValue(attachedInputVarWriter);
+                }
+
+                curNode.Value = sender.ReferenceID;
+
+                curNode = sender.OnSent;
+
+                offset = new float3(0, -0.17f, 0);
+                curOffset = wsClientVar.Slot.LocalPosition + new float3(0.6f, 0, 0);
+                foreach (VariableInfo returnVar in returnVars)
+                {
+                    curOffset += offset;
+                    Type readDynvarType;
+                    string readName;
+                    Msg("starting with type " + returnVar.resoniteType.ToString() + " with name " + returnVar.name);
+                    if (returnVar.isResoniteTypeValueType)
+                    {
+                        readDynvarType = typeof(ReadDynamicValueVariable<>).MakeGenericType(returnVar.resoniteType);
+                        readName = "ReadDynamicValueVariable`1";
+                    }
+                    else
+                    {
+                        readDynvarType = typeof(ReadDynamicObjectVariable<>).MakeGenericType(returnVar.resoniteType);
+                        readName = "ReadDynamicObjectVariable`1";
+                    }
+                    Msg("dynvar");
+                    Slot returnVarSlot = addToSlot;
+                    if (returnVarSlot == null)
+                    {
+                        returnVarSlot = holder.AddSlot(readName);
+                        returnVarSlot.Position_Field.Value = curOffset;
+                    }
+                    var attachedReturnVarReader = returnVarSlot.AttachComponent(readDynvarType);
+
+
+                    Msg("Attached");
+                    // Write to Source (uses field holding template)
+                    var sourceField = attachedReturnVarReader.GetType().GetField("Source").GetValue(attachedReturnVarReader);
+                    sourceField.GetType().GetProperty("Value").SetValue(sourceField, templateInput.ReferenceID);
+
+                    Msg("Source");
+                    // Create Path field and write to Path
+                    ValueObjectInput<string> returnVarId = CreateSlotWithComponent<ValueObjectInput<string>>(holder, "ValueObjectInput`1", curOffset + new float3(-0.223f, -0.01f, -0.01f), addToSlot);
+                    returnVarId.Value.Value = method.Name + "/" + returnVar.name;
+                    var pathField = attachedReturnVarReader.GetType().GetField("Path").GetValue(attachedReturnVarReader);
+                    pathField.GetType().GetProperty("Value").SetValue(pathField, returnVarId.ReferenceID);
+                    Msg("Relay");
+
+                    // Create Write
+                    Type writeType = returnVar.isResoniteTypeValueType ?
+                        typeof(ValueWrite<>).MakeGenericType(returnVar.resoniteType) :
+                        typeof(ObjectWrite<>).MakeGenericType(returnVar.resoniteType);
+                    string writeName = (returnVar.isResoniteTypeValueType ?
+                        "Value" : "Object") + "Write`1";
+
+                    Slot writeSlot = addToSlot;
+                    if (writeSlot == null)
+                    {
+                        writeSlot = holder.AddSlot(writeName);
+                        writeSlot.Position_Field.Value = curOffset + new float3(0.3f, 0,0);
+                    }
+
+                    var writeComponent = writeSlot.AttachComponent(writeType);
+
+                    // Attach DynvarValue -> Write Value
+                    var writeValueField = writeComponent.GetType().GetField("Value").GetValue(writeComponent);
+                    var dynvarReadValueRefIdField = attachedReturnVarReader.GetType().GetField("Value").GetValue(attachedReturnVarReader);
+                    var dynvarReadValueRefId = (RefID)dynvarReadValueRefIdField.GetType().GetProperty("ReferenceID").GetValue(dynvarReadValueRefIdField);
+                    writeValueField.GetType().GetProperty("Value").SetValue(writeValueField, dynvarReadValueRefId);
+
+                    curNode.Value = (RefID)writeComponent.GetType().GetProperty("ReferenceID").GetValue(writeComponent);
+                    curNode = (SyncRef<INodeOperation>)writeComponent.GetType().GetField("OnWritten").GetValue(writeComponent);
+
+                    // Create local
+                    Type localType = returnVar.isResoniteTypeValueType ?
+                        typeof(LocalValue<>).MakeGenericType(returnVar.resoniteType) :
+                        typeof(LocalObject<>).MakeGenericType(returnVar.resoniteType);
+                    String localName = returnVar.isResoniteTypeValueType ?
+                        "LocalValue`1" :
+                        "LocalObject`1";
+
+                    Slot localSlot = addToSlot;
+                    if (localSlot == null)
+                    {
+                        localSlot = holder.AddSlot(writeName);
+                        localSlot.Position_Field.Value = curOffset + new float3(0.4f, -0.1f, 0);
+                    }
+
+                    // Write to Local
+                    var localComponent = localSlot.AttachComponent(localType);
+                    var localComponentRefId = localComponent.GetType().GetProperty("ReferenceID").GetValue(localComponent);
+                    var writeVarField = writeComponent.GetType().GetField("Variable").GetValue(writeComponent);
+                    writeVarField.GetType().GetProperty("Value").SetValue(writeVarField, localComponentRefId);
+                    
+                    // Create Relay
+                    Type relayType = returnVar.isResoniteTypeValueType ?
+                        typeof(ValueRelay<>).MakeGenericType(returnVar.resoniteType) :
+                        typeof(ObjectRelay<>).MakeGenericType(returnVar.resoniteType);
+
+                    
+                    Slot relaySlot = holder.AddSlot("Relay:" + returnVar.name);
+                    relaySlot.Position_Field.Value = curOffset + new float3(0.6f, -0.07f, 0);
+                    
+                    var relayComponent = relaySlot.AttachComponent(relayType);
+
+                    // Connect Local Value To Relay
+                    var relayInputField = relayComponent.GetType().GetField("Input").GetValue(relayComponent);
+                    relayInputField.GetType().GetProperty("Value").SetValue(relayInputField, localComponentRefId);
+                    Msg("relay made");
+
+                    
+
+                }
+
+
                 Slot headSlot = FrooxEngine.Engine.Current.WorldManager.FocusedWorld.LocalUser.GetBodyNodeSlot(BodyNode.Head);
                 if (headSlot != null)
                 {
                     holder.GlobalPosition = headSlot.GlobalPosition;
                 }
+
+                if (!monopack)
+                {
+                    holder.UnpackNodes();
+                }
+
                 return holder;
             }
 
