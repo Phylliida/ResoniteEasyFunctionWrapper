@@ -73,7 +73,7 @@ resrec:///U-TessaCoil/R-0cb7a535-e4da-4e93-9725-402f6f3a322e
 
 For anyone without your mod, the node will do nothing. However, with the mod, your session is still compatible with people without the mod.
 
-The code will only run if you are the one that sent the impulse (LocalUser == you)
+The code will only run if you are the one that sent the impulse (LocalUser == you).
 
 ## How it works?
 
