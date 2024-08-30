@@ -52,7 +52,7 @@ This method will automatically fetch all the public, static methods in your clas
 
 To use the wrapper, open Resonite, pull up a dev tool, and press "Create new".
 
-The context menu will have an additional menu "Generate Wrapper Flux".
+The menu will have an additional option "Generate Wrapper Flux".
 
 ![Generate Wrapper Flux](https://github.com/Phylliida/ResoniteEasyFunctionWrapper/blob/main/Assets/menu.jpg?raw=true)
 
