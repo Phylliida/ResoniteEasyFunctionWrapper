@@ -7,6 +7,24 @@
       "RelativeMoniker": "D:0:0:{2A092467-467A-4DE3-9E84-27A610ABD63C}|ResoniteWrapper\\ResoniteWrapper.csproj|solutionrelative:resonitewrapper\\resonitewrapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Core\\ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicVariable.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Nodes\\UnpackProtoFlux.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -30,9 +48,6 @@
     },
     {
       "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|ResoniteWrapper||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -47,6 +62,97 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "AsyncActionNode.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "ViewState": "AQIAAAYAAAAAAMAkQuzhvwAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-29T23:18:13.396Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "WebsocketTextMessageSender.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
+              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
+              "ViewState": "AQIAABMAAAAAAAAAAAAAAB8AAAADAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-28T23:11:25.608Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ResoniteWrapper.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Desktop\\prog\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper.cs",
+              "RelativeDocumentMoniker": "ResoniteWrapper\\ResoniteWrapper.cs",
+              "ToolTip": "C:\\Users\\yams\\Desktop\\prog\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper.cs",
+              "RelativeToolTip": "ResoniteWrapper\\ResoniteWrapper.cs",
+              "ViewState": "AQIAANYDAAAAACBJ0yMpwN4DAAAfAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-28T20:44:08.809Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AsyncActionNode.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Core\\ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Core\\ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Core\\ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Core\\ProtoFlux.Runtimes.Execution\\AsyncActionNode.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-29T23:17:52.706Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "WriteDynamicObjectVariable.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFluxBindings\\FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "ViewState": "AQIAAEUAAAAAADBWZm4owE0AAAAPAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-29T21:49:28.435Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "WriteDynamicVariable.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicVariable.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicVariable.cs",
+              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicVariable.cs",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicVariable.cs",
+              "ViewState": "AQIAAAwAAAAAAAAAAAAAAA4AAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-29T21:49:51.054Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "WriteDynamicObjectVariable.cs",
+              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables\\WriteDynamicObjectVariable.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAkwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-29T21:49:22.518Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
               "Title": "UnpackProtoFlux.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Nodes\\UnpackProtoFlux.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Nodes\\UnpackProtoFlux.cs",
@@ -54,12 +160,11 @@
               "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Nodes\\UnpackProtoFlux.cs",
               "ViewState": "AQIAAAUAAAAAAIAqC1UtwAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-29T17:15:39.056Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-08-29T17:15:39.056Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 8,
               "Title": "GlobalTypeRegistry.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\GlobalTypeRegistry.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\GlobalTypeRegistry.cs",
@@ -71,20 +176,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ResoniteWrapper.cs",
-              "DocumentMoniker": "C:\\Users\\yams\\Desktop\\prog\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper.cs",
-              "RelativeDocumentMoniker": "ResoniteWrapper\\ResoniteWrapper.cs",
-              "ToolTip": "C:\\Users\\yams\\Desktop\\prog\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper.cs",
-              "RelativeToolTip": "ResoniteWrapper\\ResoniteWrapper.cs",
-              "ViewState": "AQIAAAUCAAAAAAAAAAAAwAwCAAAQAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-28T20:44:08.809Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 9,
               "Title": "WorkerHelper.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\WorkerHelper.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\WorkerHelper.cs",
@@ -96,7 +188,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 10,
               "Title": "TypeManager.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\TypeManager.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\TypeManager.cs",
@@ -108,7 +200,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 11,
               "Title": "IQuantity.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\Elements.Quantity\\Elements.Quantity\\IQuantity.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\Elements.Quantity\\Elements.Quantity\\IQuantity.cs",
@@ -120,7 +212,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 12,
               "Title": "World.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\World.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\FrooxEngine\\FrooxEngine\\World.cs",
@@ -132,7 +224,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 13,
               "Title": "AssemblyInfo.cs",
               "DocumentMoniker": "C:\\Users\\yams\\Desktop\\prog\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\Properties\\AssemblyInfo.cs",
               "RelativeDocumentMoniker": "ResoniteWrapper\\Properties\\AssemblyInfo.cs",
@@ -144,19 +236,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "WebsocketTextMessageSender.cs",
-              "DocumentMoniker": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
-              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
-              "ToolTip": "C:\\Users\\yams\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
-              "RelativeToolTip": "..\\..\\..\\..\\..\\Downloads\\ResoniteDecomp\\Scripts\\ProtoFlux.Nodes.FrooxEngine\\ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network\\WebsocketTextMessageSender.cs",
-              "ViewState": "AQIAABIAAAAAAIBQmFEVwAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-28T23:11:25.608Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 14,
               "Title": "ResoniteWrapper",
               "DocumentMoniker": "C:\\Users\\yams\\Desktop\\prog\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper\\ResoniteWrapper.csproj",
               "RelativeDocumentMoniker": "ResoniteWrapper\\ResoniteWrapper.csproj",

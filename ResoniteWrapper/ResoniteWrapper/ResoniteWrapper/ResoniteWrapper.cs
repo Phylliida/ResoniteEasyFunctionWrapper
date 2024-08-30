@@ -28,6 +28,8 @@ using System.Configuration;
 using ProtoFlux.Runtimes.Execution;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Async;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+//using ProtoFlux.Runtimes.Execution.Nodes;
 // tmp
 
 namespace ResoniteWrapper
@@ -325,6 +327,7 @@ namespace ResoniteWrapper
                 object[] dummyParams = new object[2] { null, null };
                 foreach (VariableInfo inputVar in inputVars)
                 {
+                    Msg("getting input var " + inputVar.resoniteType + " " + inputVar.name);
                     // Cursed stuff to call of generic type
                     MethodInfo readMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryReadValue));
                     MethodInfo genericReadMethod = readMethod.MakeGenericMethod(inputVar.type);
@@ -335,6 +338,7 @@ namespace ResoniteWrapper
                     object value = dummyParams[1];
                     if (found)
                     {
+                        Msg("got input var " + inputVar.resoniteType + " " + inputVar.name);
                         if (inputVar.isValidResoniteType)
                         {
                             parameters[inputVar.paramIndex] = value;
@@ -348,6 +352,7 @@ namespace ResoniteWrapper
                             if(Guid.TryParse((string)value, out inputParamGuid) &&
                                 typeLookup.TryGet(inputParamGuid, inputVar.type, out nonResoniteValue)) {
                                 parameters[inputVar.paramIndex] = nonResoniteValue;
+                                Msg("read of type " + inputVar.resoniteType + " " + inputVar.name);
                             }
                             else
                             {
@@ -366,11 +371,16 @@ namespace ResoniteWrapper
 
                 if (success)
                 {
+                    Msg("calling method " + method.Name);
+
                     // null for first input to Invoke means static, we only support static methods
                     var result = this.method.Invoke(null, parameters);
 
+                    Msg("called method " + method.Name);
+
                     foreach (VariableInfo returnVar in returnVars)
                     {
+                        Msg("starting on var " + returnVar.name + " with type " + returnVar.type.ToString());
                         object value = null;
 
                         if (returnVar.variableKind == VariableKind.Parameter)
@@ -391,6 +401,8 @@ namespace ResoniteWrapper
                             else
                             {
                                 ITuple resultTuple = result as ITuple;
+
+                                Msg("casted tuple " + method.Name);
                                 if (resultTuple == null)
                                 {
                                     success = false;
@@ -398,29 +410,53 @@ namespace ResoniteWrapper
                                 }
                                 else
                                 {
+                                    Msg("reading from tuple " + returnVar.name + " " + returnVar.paramIndex + " " + returnVar.type);
                                     value = resultTuple[returnVar.paramIndex];
                                 }
                             }
                         }
                         if (success)
                         {
+                            Msg("return var of type " + returnVar.type.ToString() + " is valid resonite type? " + returnVar.isValidResoniteType);
                             // if not a valid resonite type we need to convert to string using our lookup table
                             if (!returnVar.isValidResoniteType)
                             {
+                                Msg("adding to table");
                                 // We don't want to allocate a new uuid if we are just passing through a value or returning a constant value
                                 // this has a small cache for each type encountered to prevent that
                                 value = typeLookup.Add(value).ToString();
+                                Msg("got uuid " + value);
                             }
+                            if (value != null)
+                            {
+                                Msg("Got value of type " + value.GetType().ToString());
+                            }
+                            else
+                            {
+                                Msg("Got null value");
+                            }
+                            //DynamicVariableWriteResult writeResult = space.TryWriteValue(returnVar.name, value);
+                            //Msg("did write");
                             // Cursed stuff to call of generic type
                             MethodInfo writeMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryWriteValue));
                             MethodInfo genericWriteMethod = writeMethod.MakeGenericMethod(returnVar.resoniteType);
                             dummyParams[0] = returnVar.name;
                             dummyParams[1] = value;
-                            bool written = (bool)genericWriteMethod.Invoke(space, dummyParams);
-                            if (!written)
+                            DynamicVariableWriteResult writeResult = (DynamicVariableWriteResult)genericWriteMethod.Invoke(space, dummyParams);
+
+                            Msg("write result of " + writeResult);
+                            switch (writeResult)
                             {
-                                success = false;
-                                error = "Failed to write to output value " + returnVar.name + " of type " + returnVar.type.ToString();
+                                case DynamicVariableWriteResult.Success:
+                                    break;
+                                case DynamicVariableWriteResult.NotFound:
+                                    success = false;
+                                    error = "When writing, could not find output variable " + returnVar.name + " of type " + returnVar.type.ToString() + " and resonite type " + returnVar.resoniteType.ToString();
+                                    break;
+                                case DynamicVariableWriteResult.Failed:
+                                    success = false;
+                                    error = "When writing, could write to output variable " + returnVar.name + " of type " + returnVar.type.ToString() + " and resonite type " + returnVar.resoniteType.ToString();
+                                    break;
                             }
                         }                        
                         if (!success)
@@ -431,8 +467,10 @@ namespace ResoniteWrapper
                 }
                 if (!success)
                 {
-                    space.TryWriteValue<string>("error", error);
+                    Msg("Writing error " + error);
+                    space.TryWriteValue("error", error);
                 }
+                Msg("Done running method " + name);
             }
 
             Slot CreateEmptySlot(string name)
@@ -498,6 +536,12 @@ namespace ResoniteWrapper
 
                 DynamicReferenceVariable<WebsocketClient> wsVar = template.AttachComponent<DynamicReferenceVariable<WebsocketClient>>();
                 wsVar.VariableName.Value = method.Name + "/" + "FAKE_WS_CLIENT";
+                wsVar.Reference.Value = client.ReferenceID;
+
+                DynamicValueVariable<string> errorMessage = template.AttachComponent<DynamicValueVariable<string>>();
+                errorMessage.VariableName.Value = method.Name + "/" + "error";
+                errorMessage.Value.Value = "";
+
                 return template;
             }
 
@@ -521,7 +565,7 @@ namespace ResoniteWrapper
                 {
                     addToSlot = holder.AddSlot("Monopacked flux");
                 }
-                AsyncCallRelay relay = CreateSlotWithComponent<AsyncCallRelay>(holder, "AsyncCallRelay", new float3(-0.3f, 0.19f, 0), null);
+                AsyncCallRelay relay = CreateSlotWithComponent<AsyncCallRelay>(holder, "AsyncCallRelay:Call", new float3(-0.5f, 0.19f, 0), null);
                 
                 RefObjectInput<Slot> templateInput = CreateSlotWithComponent<RefObjectInput<Slot>>(holder, "RefObjectInput`1", new float3(-0.28f, 0.37f, 0.02f), addToSlot);
                 templateInput.Target.Value = template.ReferenceID;
@@ -591,7 +635,7 @@ namespace ResoniteWrapper
                     if (relaySlot == null)
                     {
                         relaySlot = holder.AddSlot("Relay:" + inputVar.name);
-                        relaySlot.Position_Field.Value = curOffset + new float3(-0.3f, -0.07f, 0);
+                        relaySlot.Position_Field.Value = curOffset + new float3(-0.5f, -0.07f, 0);
                     }
                     var relayComponent = relaySlot.AttachComponent(relayType);
                     var relayRefId = relayComponent.GetType().GetProperty("ReferenceID").GetValue(relayComponent);
@@ -611,7 +655,7 @@ namespace ResoniteWrapper
                 curNode = sender.OnSent;
 
                 offset = new float3(0, -0.17f, 0);
-                curOffset = wsClientVar.Slot.LocalPosition + new float3(0.6f, 0, 0);
+                curOffset = wsClientVar.Slot.LocalPosition + new float3(0.5f, 0, 0);
                 foreach (VariableInfo returnVar in returnVars)
                 {
                     curOffset += offset;
@@ -633,7 +677,7 @@ namespace ResoniteWrapper
                     if (returnVarSlot == null)
                     {
                         returnVarSlot = holder.AddSlot(readName);
-                        returnVarSlot.Position_Field.Value = curOffset;
+                        returnVarSlot.Position_Field.Value = curOffset+new float3(0, 0.0025f, 0);
                     }
                     var attachedReturnVarReader = returnVarSlot.AttachComponent(readDynvarType);
 
@@ -662,7 +706,7 @@ namespace ResoniteWrapper
                     if (writeSlot == null)
                     {
                         writeSlot = holder.AddSlot(writeName);
-                        writeSlot.Position_Field.Value = curOffset + new float3(0.3f, 0,0);
+                        writeSlot.Position_Field.Value = curOffset + new float3(0.15f, -0.005f,0);
                     }
 
                     var writeComponent = writeSlot.AttachComponent(writeType);
@@ -688,7 +732,8 @@ namespace ResoniteWrapper
                     if (localSlot == null)
                     {
                         localSlot = holder.AddSlot(writeName);
-                        localSlot.Position_Field.Value = curOffset + new float3(0.4f, -0.1f, 0);
+                        localSlot.Position_Field.Value = curOffset + new float3(0.35f, 0, -0.01f);
+                        localSlot.Name = returnVar.name;
                     }
 
                     // Write to Local
@@ -704,18 +749,19 @@ namespace ResoniteWrapper
 
                     
                     Slot relaySlot = holder.AddSlot("Relay:" + returnVar.name);
-                    relaySlot.Position_Field.Value = curOffset + new float3(0.6f, -0.07f, 0);
+                    relaySlot.Position_Field.Value = curOffset + new float3(0.5f, 0, 0);
                     
                     var relayComponent = relaySlot.AttachComponent(relayType);
 
                     // Connect Local Value To Relay
                     var relayInputField = relayComponent.GetType().GetField("Input").GetValue(relayComponent);
                     relayInputField.GetType().GetProperty("Value").SetValue(relayInputField, localComponentRefId);
-                    Msg("relay made");
-
-                    
-
                 }
+
+                AsyncCallRelay outrelay = CreateSlotWithComponent<AsyncCallRelay>(holder, "AsyncCallRelay:OnDone", new float3(1f, 0.3f, 0), null);
+
+                curNode.Value = outrelay.ReferenceID;
+
 
 
                 Slot headSlot = FrooxEngine.Engine.Current.WorldManager.FocusedWorld.LocalUser.GetBodyNodeSlot(BodyNode.Head);
@@ -898,6 +944,7 @@ namespace ResoniteWrapper
             harmony = new Harmony(harmony_id);
             // This runs in the current assembly (i.e. the assembly which invokes the Hot Reload)
             harmony.UnpatchAll();
+            
             // This is where you unload your mod, free up memory, and remove Harmony patches etc.
             Msg("Cleaning up functions");
             CleanupAllWrappedFunctions();
@@ -913,31 +960,50 @@ namespace ResoniteWrapper
 
             // Now you can setup your mod again
             SetupMod();
-
         }
 
         [HarmonyPatch(typeof(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender), "RunAsync")]
         class WebsocketSendPatch
         {
-            static bool Prefix(FrooxEngineContext context, System.Object __instance)
+            [HarmonyPostfix]
+            static async Task<IOperation> PostfixBoiii(Task<IOperation> __result, ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance, System.Object __state)
             {
-                if (__instance.GetType() == typeof(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender))
+                if (__state == null)
                 {
-                    ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender sender = (ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender)__instance;
-                    WebsocketClient websocketClient = sender.Client.Evaluate(context);
-                    if (websocketClient != null && websocketClient.URL.Value != null)
+                    if (__result != null)
                     {
-                        if (websocketClient.URL.Value.ToString().StartsWith(MOD_PREFIX))
+                        return __result.Result;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    return __instance.OnSent.Target;
+                }
+            }
+
+            [HarmonyPrefix]
+            static bool Prefix(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance, FrooxEngineContext context, ref object __state)
+            {
+                __state = null;
+                WebsocketClient websocketClient = __instance.Client.Evaluate(context);
+                if (websocketClient != null && websocketClient.URL.Value != null)
+                {
+                    if (websocketClient.URL.Value.ToString().StartsWith(MOD_PREFIX))
+                    {
+                        Msg("Got websocket with url " + websocketClient.URL);
+                        if (wrappedMethods.ContainsKey(websocketClient.URL))
                         {
-                            Msg("Got websocket with url " + websocketClient.URL);
-                            if (wrappedMethods.ContainsKey(websocketClient.URL))
-                            {
-                                wrappedMethods[websocketClient.URL].CallMethod(websocketClient.Slot, globalTypeLookup);
-                                return false;
-                            }
+                            wrappedMethods[websocketClient.URL].CallMethod(websocketClient.Slot, globalTypeLookup);
+                            __state = context;
+                            return false;
                         }
                     }
                 }
+                
                 return true;
             }
         }
