@@ -92,6 +92,8 @@ mod://example.me.mymod/ExampleMethod/ExampleMethod
 ```
 it will lookup the corresponding function, and call it. To pass in the data, this wrapper flux will write to a dynvar space, and read them back out to locals once the method is done.
 
+This does not mean arbitrary code execution! Only methods that have been passed into ResoniteEasyFunctionWrapper.WrapClass by a mod, can be called.
+
 (if the URL does not look like that, WebsocketTextMessageSender will behave as normal)
 
 ## Implementation Details
