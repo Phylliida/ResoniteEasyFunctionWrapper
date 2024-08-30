@@ -72,6 +72,8 @@ Reflection is used to determine the inputs and outputs of the function.
 
 ref and out params are supported and work how you'd expect (ref are inputs and outputs, out are named outputs).
 
+If you return a tuple, each element of the tuple will be turned into an output parameter.
+
 To call your mod function without making any new nodes, we override the WebsocketTextMessageSender node.
 
 If it detects an input WebsocketClient with Url that looks like (for example):
