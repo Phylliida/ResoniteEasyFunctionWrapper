@@ -3,8 +3,6 @@
 This is a mod that lets you create custom protoflux nodes that call c# code,
 while remaining compatible with people without the mod.
 
-Warning: my custom node maker needs an update to support the named relays this mod produces! In progress, should b ready in a bit.
-
 ## Installation
 
 Follow the instructions for installing [Hot Reload Lib](https://github.com/Nytra/ResoniteHotReloadLib/tree/main?tab=readme-ov-file#pre-requisites),

@@ -423,6 +423,7 @@ namespace ResoniteEasyFunctionWrapper
             public Slot CreateTemplate(Slot holder)
             {
                 Slot template = holder.AddSlot("ParameterTemplate");
+                template.OrderOffset = 99999; // important so custom nodes work properly
                 DynamicVariableSpace space = template.AttachComponent<DynamicVariableSpace>();
                 space.SpaceName.Value = method.Name;
                 space.OnlyDirectBinding.Value = true;
@@ -836,7 +837,7 @@ namespace ResoniteEasyFunctionWrapper
 
         public override string Name => "ResoniteWrapper";
         public override string Author => "TessaCoil";
-        public override string Version => "1.0.0"; //Version of the mod, should match the AssemblyVersion
+        public override string Version => "1.0.2"; //Version of the mod, should match the AssemblyVersion
         public override string Link => "https://github.com/Phylliida/ResoniteWrapper"; // Optional link to a repo where this mod would be located
 
         [AutoRegisterConfigKey]
