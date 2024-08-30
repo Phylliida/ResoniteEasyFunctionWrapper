@@ -1,6 +1,4 @@
-ResoniteEasyFunctionWrapper/ResoniteEasyFunctionWrapper/ResoniteEasyFunctionWrapper/bin
-ResoniteEasyFunctionWrapper/ResoniteEasyFunctionWrapper/ResoniteEasyFunctionWrapper/obj
-ResoniteEasyFunctionWrapper/ResoniteEasyFunctionWrapper/.vs
+ResoniteEasyFunctionWrapper/bin
+ResoniteEasyFunctionWrapper/obj
 *.user
-.git
 .vs/
