@@ -69,6 +69,16 @@ namespace ResoniteEasyFunctionWrapper
                 this.isValidResoniteType = isTypeValidResoniteType(type, out this.isResoniteTypeValueType);
                 this.resoniteType = this.isValidResoniteType ? type : typeof(string);
             }
+
+            public override string ToString()
+            {
+                return "{Variable Info: name:" + name
+                    + " type:" + type
+                    + " variableKind:" + variableKind
+                    + " paramIndex:" + paramIndex
+                    + " isValidResoniteType:" + isValidResoniteType
+                    + " resoniteType:" + resoniteType;
+            }
         }
 
         public class RollingCache
@@ -727,12 +737,18 @@ namespace ResoniteEasyFunctionWrapper
 
         public static Dictionary<Tuple<string, string>, List<Uri>> wrappedMethodLookup = new Dictionary<Tuple<string, string>, List<Uri>>();
 
+        static WrappedMethod WrapMethodInternal(MethodInfo method, string modNamespace)
+        {
+            WrappedMethod wrappedMethod = new WrappedMethod(method, modNamespace + "/" + method.Name);
+            wrappedMethods[wrappedMethod.GetUri()] = wrappedMethod;
+            return wrappedMethod;
+        }
+
         public static void WrapMethod(MethodInfo method, string modNamespace)
         {
             if (method.IsStatic && method.IsPublic)
             {
-                WrappedMethod wrappedMethod = new WrappedMethod(method, modNamespace + "/" + method.Name);
-                wrappedMethods[wrappedMethod.GetUri()] = wrappedMethod;
+                WrappedMethod wrappedMethod = WrapMethodInternal(method: method, modNamespace: modNamespace);
                 List<Uri> methodUris = new List<Uri>();
                 methodUris.Add(wrappedMethod.GetUri());
                 wrappedMethodLookup[new Tuple<string, string>(MethodIdentifier(method), modNamespace)] = methodUris;
@@ -741,11 +757,6 @@ namespace ResoniteEasyFunctionWrapper
             {
                 throw new ArgumentException("Method " + method.Name + " of type " + method.GetType() + " is not public and static, cannot wrap");
             }
-        }
-
-        static string MethodIdentifier(MethodInfo method)
-        {
-            return method.Name + ":" + method.GetType().ToString();
         }
 
         public static void UnwrapMethod(MethodInfo method, string modNamespace)
@@ -763,15 +774,44 @@ namespace ResoniteEasyFunctionWrapper
             }
         }
 
+        static string MethodIdentifier(MethodInfo method)
+        {
+            return method.Name + ":" + method.GetType().ToString();
+        }
+
         public static void WrapClass(Type classType, string modNamespace)
         {
             List<Uri> methodUris = new List<Uri>();
             foreach (MethodInfo method in classType.GetMethods())
             {
-                WrapMethod(method: method, modNamespace: modNamespace);
+                if (method.IsStatic && method.IsPublic)
+                {
+                    WrappedMethod wrappedMethod = WrapMethodInternal(method: method, modNamespace: modNamespace);
+                    methodUris.Add(wrappedMethod.GetUri());
+                }
+                else
+                {
+                    Msg("Not wrapping method " + method.Name + " in namespace " + modNamespace + " because it is not public and static");
+                }
             }
             wrappedMethodLookup[new Tuple<string, string>(classType.ToString(), modNamespace)] = methodUris;
         }
+
+        public static void UnwrapClass(Type classType, string modNamespace)
+        {
+            Tuple<string, string> key = new Tuple<string, string>(classType.ToString(), modNamespace);
+            if (wrappedMethodLookup.ContainsKey(key))
+            {
+                List<Uri> uris = wrappedMethodLookup[key];
+                UnwrapUris(uris);
+                wrappedMethodLookup.Remove(key);
+            }
+            else
+            {
+                Warn("Tried to clean up class with type " + classType.ToString() + " and namespace " + modNamespace + " but did not exist, did you create it?");
+            }
+        }
+
 
 
         static void UnwrapUris(List<Uri> uris)
@@ -791,21 +831,6 @@ namespace ResoniteEasyFunctionWrapper
                     }
                     wrappedMethods.Remove(uri);
                 }
-            }
-        }
-
-        public static void UnwrapClass(Type classType, string modNamespace)
-        {
-            Tuple<string, string> key = new Tuple<string, string>(classType.ToString(), modNamespace);
-            if (wrappedMethodLookup.ContainsKey(key))
-            {
-                List<Uri> uris = wrappedMethodLookup[key];
-                UnwrapUris(uris);
-                wrappedMethodLookup.Remove(key);
-            }
-            else
-            {
-                Warn("Tried to clean up class with type " + classType.ToString() + " and namespace " + modNamespace + " but did not exist, did you create it?");
             }
         }
 
@@ -871,6 +896,7 @@ namespace ResoniteEasyFunctionWrapper
         [HarmonyPatch(typeof(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender), "RunAsync")]
         class WebsocketSendPatch
         {
+            [HarmonyPostfix]
             static async Task<IOperation> Postfix(Task<IOperation> __result, ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance, int __state)
             {
                 if (__state == 0)
