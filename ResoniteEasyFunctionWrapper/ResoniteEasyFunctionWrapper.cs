@@ -15,10 +15,11 @@ using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables;
 using ResoniteHotReloadLib;
 using System.Xml.XPath;
+using System.CodeDom;
 
 namespace ResoniteEasyFunctionWrapper
 {
-    public class ResoniteEacyFunctionWrapper : ResoniteMod
+    public class ResoniteEasyFunctionWrapper : ResoniteMod
     {
         static string RESONITE_WRAPPER_PATH = "Generate Wrapper Flux";
 
@@ -726,19 +727,71 @@ namespace ResoniteEasyFunctionWrapper
 
         public static Dictionary<Tuple<string, string>, List<Uri>> wrappedMethodLookup = new Dictionary<Tuple<string, string>, List<Uri>>();
 
+        public static void WrapMethod(MethodInfo method, string modNamespace)
+        {
+            if (method.IsStatic && method.IsPublic)
+            {
+                WrappedMethod wrappedMethod = new WrappedMethod(method, modNamespace + "/" + method.Name);
+                wrappedMethods[wrappedMethod.GetUri()] = wrappedMethod;
+                List<Uri> methodUris = new List<Uri>();
+                methodUris.Add(wrappedMethod.GetUri());
+                wrappedMethodLookup[new Tuple<string, string>(MethodIdentifier(method), modNamespace)] = methodUris;
+            }
+            else
+            {
+                throw new ArgumentException("Method " + method.Name + " of type " + method.GetType() + " is not public and static, cannot wrap");
+            }
+        }
+
+        static string MethodIdentifier(MethodInfo method)
+        {
+            return method.Name + ":" + method.GetType().ToString();
+        }
+
+        public static void UnwrapMethod(MethodInfo method, string modNamespace)
+        {
+            Tuple<string, string> key = new Tuple<string, string>(MethodIdentifier(method), modNamespace);
+            if (wrappedMethodLookup.ContainsKey(key))
+            {
+                List<Uri> uris = wrappedMethodLookup[key];
+                UnwrapUris(uris);
+                wrappedMethodLookup.Remove(key);
+            }
+            else
+            {
+                Warn("Tried to clean up method " + method.Name + " with type " + method.GetType().ToString() + " and namespace " + modNamespace + " but did not exist, did you create it?");
+            }
+        }
+
         public static void WrapClass(Type classType, string modNamespace)
         {
             List<Uri> methodUris = new List<Uri>();
             foreach (MethodInfo method in classType.GetMethods())
             {
-                if (method.IsStatic && method.IsPublic)
-                {
-                    WrappedMethod wrappedMethod = new WrappedMethod(method, modNamespace + "/" + classType.ToString());
-                    wrappedMethods[wrappedMethod.GetUri()] = wrappedMethod;
-                    methodUris.Add(wrappedMethod.GetUri());
-                }
+                WrapMethod(method: method, modNamespace: modNamespace);
             }
             wrappedMethodLookup[new Tuple<string, string>(classType.ToString(), modNamespace)] = methodUris;
+        }
+
+
+        static void UnwrapUris(List<Uri> uris)
+        {
+            foreach (Uri uri in uris)
+            {
+                if (wrappedMethods.ContainsKey(uri))
+                {
+                    WrappedMethod wrappedMethod = wrappedMethods[uri];
+                    if (wrappedMethod != null)
+                    {
+                        wrappedMethod.Dispose();
+                    }
+                    else
+                    {
+                        Warn("Wrapped method is null?? with uri " + uri);
+                    }
+                    wrappedMethods.Remove(uri);
+                }
+            }
         }
 
         public static void UnwrapClass(Type classType, string modNamespace)
@@ -747,22 +800,7 @@ namespace ResoniteEasyFunctionWrapper
             if (wrappedMethodLookup.ContainsKey(key))
             {
                 List<Uri> uris = wrappedMethodLookup[key];
-                foreach (Uri uri in uris)
-                {
-                    if (wrappedMethods.ContainsKey(uri))
-                    {
-                        WrappedMethod wrappedMethod = wrappedMethods[uri];
-                        if (wrappedMethod != null)
-                        {
-                            wrappedMethod.Dispose();
-                        }
-                        else
-                        {
-                            Warn("Wrapped method is null?? with uri " + uri);
-                        }
-                        wrappedMethods.Remove(uri);
-                    }
-                }
+                UnwrapUris(uris);
                 wrappedMethodLookup.Remove(key);
             }
             else
