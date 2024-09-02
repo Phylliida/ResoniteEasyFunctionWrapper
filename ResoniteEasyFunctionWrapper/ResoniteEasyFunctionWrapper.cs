@@ -901,7 +901,7 @@ namespace ResoniteEasyFunctionWrapper
         }
         public override string Name => "ResoniteEasyFunctionWrapper";
         public override string Author => "TessaCoil";
-        public override string Version => "1.0.2"; //Version of the mod, should match the AssemblyVersion
+        public override string Version => "1.0.3"; //Version of the mod, should match the AssemblyVersion
         public override string Link => "https://github.com/Phylliida/ResoniteWrapper"; // Optional link to a repo where this mod would be located
 
         [AutoRegisterConfigKey]

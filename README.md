@@ -104,8 +104,8 @@ To do this, we have a lookup table of objects to uuids, and in resonite the uuid
 
 To avoid the same object creating uuids every time it is called, there is a small cache of uuids for each type that is checked first.
 
+Async methods are supported as of v1.0.3!
+
 ## Limitations
 
 Do not make two methods named the same thing.
-
-Async methods are not supported (yet! I'd love to just still figuring it out)
