@@ -16,6 +16,7 @@ using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables;
 using ResoniteHotReloadLib;
 using System.Xml.XPath;
 using System.CodeDom;
+using static ResoniteEasyFunctionWrapper.ResoniteEasyFunctionWrapper;
 
 namespace ResoniteEasyFunctionWrapper
 {
@@ -29,6 +30,7 @@ namespace ResoniteEasyFunctionWrapper
         {
             Parameter,
             TupleFromReturn,
+            FromAsyncTaskReturn,
             ReturnValue
         }
         public struct VariableInfo
@@ -194,7 +196,7 @@ namespace ResoniteEasyFunctionWrapper
             }
         }
 
-        public static void GetMethodVars(MethodInfo method, out List<VariableInfo> inputVars, out List<VariableInfo> returnVars)
+        public static void GetMethodVars(MethodInfo method, bool isAsync, out List<VariableInfo> inputVars, out List<VariableInfo> returnVars)
         {
             inputVars = new List<VariableInfo>();
             returnVars = new List<VariableInfo>();
@@ -216,6 +218,11 @@ namespace ResoniteEasyFunctionWrapper
                     {
                         returnVars.Add(new VariableInfo(i.ToString(), genType.GetGenericArguments()[i], VariableKind.TupleFromReturn, i));
                     }
+                }
+                else if(genType == typeof(Task<>) && isAsync)
+                {
+                    Msg("Got task with generic type " + returnType.GetGenericArguments()[0]);
+                    returnVars.Add(new VariableInfo("0", returnType.GetGenericArguments()[0], VariableKind.FromAsyncTaskReturn, 0));
                 }
                 else
                 {
@@ -253,9 +260,10 @@ namespace ResoniteEasyFunctionWrapper
         }
         public class WrappedMethod : IDisposable
         {
-            MethodInfo method;
-            string name;
-            string modNamespace;
+            public MethodInfo method;
+            public bool isAsync;
+            public string name;
+            public string modNamespace;
             List<VariableInfo> inputVars;
             List<VariableInfo> outputVars;
             public WrappedMethod(MethodInfo method, string modNamespace)
@@ -263,8 +271,23 @@ namespace ResoniteEasyFunctionWrapper
                 this.method = method;
                 this.name = method.Name;
                 this.modNamespace = modNamespace;
-                GetMethodVars(method, out inputVars, out outputVars);
+                this.isAsync = IsAsyncMethod(method);
+                GetMethodVars(method, this.isAsync, out inputVars, out outputVars);
                 AddReloadMenuOption();
+            }
+
+
+            // From https://stackoverflow.com/a/20350646, I decided just returning Task should not be counted as async so functions can pass around task if they want
+            private static bool IsAsyncMethod(MethodInfo method)
+            {
+                Type attType = typeof(AsyncStateMachineAttribute);
+
+                // Obtain the custom attribute for the method. 
+                // The value returned contains the StateMachineType property. 
+                // Null is returned if the attribute isn't present for the method. 
+                var attrib = (AsyncStateMachineAttribute)method.GetCustomAttribute(attType);
+
+                return (attrib != null);
             }
 
             public void Dispose()
@@ -302,6 +325,100 @@ namespace ResoniteEasyFunctionWrapper
                 obj.GetType().GetProperty(propertyName).SetValue(obj, value);
             }
 
+            public object[] GetParameters(DynamicVariableSpace space, UnsupportedTypeLookup typeLookup)
+            {
+                object[] parameters = new object[method.GetParameters().Length];
+                object[] dummyParams = new object[2] { null, null };
+                foreach (VariableInfo inputVar in inputVars)
+                {
+                    // Cursed stuff to call of generic type
+                    MethodInfo readMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryReadValue));
+                    MethodInfo genericReadMethod = readMethod.MakeGenericMethod(inputVar.type);
+                    // the null at second place works as an out
+                    dummyParams[0] = inputVar.name;
+                    dummyParams[1] = null;
+                    bool found = (bool)genericReadMethod.Invoke(space, dummyParams);
+                    object value = dummyParams[1];
+                    if (!found)
+                    {
+                        throw new MethodCallException("In Dynvar, could not find parameter " + inputVar);
+                    }
+                    if (inputVar.isValidResoniteType)
+                    {
+                        parameters[inputVar.paramIndex] = value;
+                    }
+                    else
+                    {
+                        // if not a valid resonite type we need to use our lookup table to find the value
+                        // because we just store a string with a guid pointing to it
+                        object nonResoniteValue;
+                        Guid inputParamGuid;
+                        if (Guid.TryParse((string)value, out inputParamGuid) &&
+                            typeLookup.TryGet(inputParamGuid, inputVar.type, out nonResoniteValue))
+                        {
+                            parameters[inputVar.paramIndex] = nonResoniteValue;
+                        }
+                        else
+                        {
+                            throw new MethodCallException("Failed to lookup object parameter " + inputVar + " with uuid " + value);
+                        }
+                    }
+                }
+                return parameters;
+            }
+
+            public void WriteResult(object result, object[] parameters, DynamicVariableSpace space, UnsupportedTypeLookup typeLookup)
+            {
+                object[] dummyParams = new object[2] { null, null };
+                foreach (VariableInfo returnVar in outputVars)
+                {
+                    object value = null;
+
+                    switch (returnVar.variableKind)
+                    {
+                        case VariableKind.Parameter:
+                            value = parameters[returnVar.paramIndex];
+                            break;
+                        case VariableKind.ReturnValue:
+                            value = result;
+                            break;
+                        case VariableKind.FromAsyncTaskReturn:
+                            value = result;
+                            break;
+                        case VariableKind.TupleFromReturn:
+                            ITuple resultTuple = result as ITuple;
+                            if (result == null || resultTuple == null)
+                            {
+                                throw new MethodCallException("Expected tuple, returned null");
+                            }
+                            value = resultTuple[returnVar.paramIndex];
+                            break;
+                    }
+                    if (!returnVar.isValidResoniteType)
+                    {
+                        // We don't want to allocate a new uuid if we are just passing through a value or returning a constant value
+                        // this has a small cache for each type encountered to prevent that
+                        value = typeLookup.Add(value).ToString();
+                    }
+                    // Cursed stuff to call of generic type
+                    MethodInfo writeMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryWriteValue));
+                    MethodInfo genericWriteMethod = writeMethod.MakeGenericMethod(returnVar.resoniteType);
+                    dummyParams[0] = returnVar.name;
+                    dummyParams[1] = value;
+                    DynamicVariableWriteResult writeResult = (DynamicVariableWriteResult)genericWriteMethod.Invoke(space, dummyParams);
+
+                    switch (writeResult)
+                    {
+                        case DynamicVariableWriteResult.Success:
+                            break;
+                        case DynamicVariableWriteResult.NotFound:
+                            throw new MethodCallException("Could not find dynvar for output variagble " + returnVar);
+                        case DynamicVariableWriteResult.Failed:
+                            throw new MethodCallException("Failed to write dynvar for output variagble " + returnVar);
+                    }
+                }
+            }
+
             public void CallMethod(Slot dataSlot, UnsupportedTypeLookup typeLookup)
             {
                 DynamicVariableSpace space = dataSlot.GetComponent<DynamicVariableSpace>();
@@ -311,91 +428,11 @@ namespace ResoniteEasyFunctionWrapper
                 }
                 try
                 {
-                    Object[] parameters = new object[method.GetParameters().Length];
-                    object[] dummyParams = new object[2] { null, null };
-                    foreach (VariableInfo inputVar in inputVars)
-                    {
-                        // Cursed stuff to call of generic type
-                        MethodInfo readMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryReadValue));
-                        MethodInfo genericReadMethod = readMethod.MakeGenericMethod(inputVar.type);
-                        // the null at second place works as an out
-                        dummyParams[0] = inputVar.name;
-                        dummyParams[1] = null;
-                        bool found = (bool)genericReadMethod.Invoke(space, dummyParams);
-                        object value = dummyParams[1];
-                        if (!found)
-                        {
-                            throw new MethodCallException("In Dynvar, could not find parameter " + inputVar);
-                        }
-                        if (inputVar.isValidResoniteType)
-                        {
-                            parameters[inputVar.paramIndex] = value;
-                        }
-                        else
-                        {
-                            // if not a valid resonite type we need to use our lookup table to find the value
-                            // because we just store a string with a guid pointing to it
-                            object nonResoniteValue;
-                            Guid inputParamGuid;
-                            if (Guid.TryParse((string)value, out inputParamGuid) &&
-                                typeLookup.TryGet(inputParamGuid, inputVar.type, out nonResoniteValue))
-                            {
-                                parameters[inputVar.paramIndex] = nonResoniteValue;
-                            }
-                            else
-                            {
-                                throw new MethodCallException("Failed to lookup object parameter " + inputVar + " with uuid " + value);
-                            }
-                        }
-                    }
-
+                    object[] parameters = GetParameters(space: space, typeLookup: typeLookup);
                     // null for first input to Invoke means static, we only support static methods
                     var result = this.method.Invoke(null, parameters);
+                    WriteResult(result, parameters, space, typeLookup);
 
-                    foreach (VariableInfo returnVar in outputVars)
-                    {
-                        object value = null;
-
-                        switch (returnVar.variableKind)
-                        {
-                            case VariableKind.Parameter:
-                                value = parameters[returnVar.paramIndex];
-                                break;
-                            case VariableKind.ReturnValue:
-                                value = result;
-                                break;
-                            case VariableKind.TupleFromReturn:
-                                ITuple resultTuple = result as ITuple;
-                                if (result == null || resultTuple == null)
-                                {
-                                    throw new MethodCallException("Expected tuple, returned null");
-                                }
-                                value = resultTuple[returnVar.paramIndex];
-                                break;
-                        }
-                        if (!returnVar.isValidResoniteType)
-                        {
-                            // We don't want to allocate a new uuid if we are just passing through a value or returning a constant value
-                            // this has a small cache for each type encountered to prevent that
-                            value = typeLookup.Add(value).ToString();
-                        }
-                        // Cursed stuff to call of generic type
-                        MethodInfo writeMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryWriteValue));
-                        MethodInfo genericWriteMethod = writeMethod.MakeGenericMethod(returnVar.resoniteType);
-                        dummyParams[0] = returnVar.name;
-                        dummyParams[1] = value;
-                        DynamicVariableWriteResult writeResult = (DynamicVariableWriteResult)genericWriteMethod.Invoke(space, dummyParams);
-
-                        switch (writeResult)
-                        {
-                            case DynamicVariableWriteResult.Success:
-                                break;
-                            case DynamicVariableWriteResult.NotFound:
-                                throw new MethodCallException("Could not find dynvar for output variagble " + returnVar);
-                            case DynamicVariableWriteResult.Failed:
-                                throw new MethodCallException("Failed to write dynvar for output variagble " + returnVar);
-                        }
-                    }
                 }
                 catch (MethodCallException methodCallException)
                 {
@@ -403,6 +440,36 @@ namespace ResoniteEasyFunctionWrapper
                     space.TryWriteValue("error", methodCallException.message);
                 }
             }
+
+            public async Task CallMethodAsync(Slot dataSlot, UnsupportedTypeLookup typeLookup)
+            {
+                DynamicVariableSpace space = dataSlot.GetComponent<DynamicVariableSpace>();
+                if (space == null)
+                {
+                    return;
+                }
+                try
+                {
+                    object[] parameters = GetParameters(space: space, typeLookup: typeLookup);
+                    // null for first input to Invoke means static, we only support static methods
+                    var task = (Task)(this.method.Invoke(null, parameters));
+                    await task;
+                    object result = null;
+                    // if the Task has a type (and isn't just Task, no return value)
+                    if (this.method.ReturnType.IsGenericType
+                       && task.GetType().GetProperty("Result") != null)
+                    {
+                        result = ReadProperty(task, "Result");
+                    }
+                    WriteResult(result, parameters, space, typeLookup);
+                }
+                catch (MethodCallException methodCallException)
+                {
+                    Msg("Writing error " + methodCallException.message);
+                    space.TryWriteValue("error", methodCallException.message);
+                }
+            }
+
 
             void CreateVarsForVar(Slot slot, string spaceName, VariableInfo var)
             {
@@ -813,8 +880,6 @@ namespace ResoniteEasyFunctionWrapper
             }
         }
 
-
-
         static void UnwrapUris(List<Uri> uris)
         {
             foreach (Uri uri in uris)
@@ -834,8 +899,7 @@ namespace ResoniteEasyFunctionWrapper
                 }
             }
         }
-
-        public override string Name => "ResoniteWrapper";
+        public override string Name => "ResoniteEasyFunctionWrapper";
         public override string Author => "TessaCoil";
         public override string Version => "1.0.2"; //Version of the mod, should match the AssemblyVersion
         public override string Link => "https://github.com/Phylliida/ResoniteWrapper"; // Optional link to a repo where this mod would be located
@@ -844,7 +908,7 @@ namespace ResoniteEasyFunctionWrapper
         private static readonly ModConfigurationKey<bool> enabled = new ModConfigurationKey<bool>("enabled", "Should the mod be enabled", () => true); //Optional config settings
 
         private static ModConfiguration Config; //If you use config settings, this will be where you interface with them.
-        private static string harmony_id = "bepis.Phylliida.ResoniteWrapper";
+        private static string harmony_id = "bepis.Phylliida.ResoniteEasyFunctionWrapper";
 
         private static Harmony harmony;
         public override void OnEngineInit()
@@ -897,41 +961,33 @@ namespace ResoniteEasyFunctionWrapper
         [HarmonyPatch(typeof(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender), "RunAsync")]
         class WebsocketSendPatch
         {
-            [HarmonyPostfix]
-            static async Task<IOperation> Postfix(Task<IOperation> __result, ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance, int __state)
+            public static async Task<IOperation> CallAsync(FrooxEngineContext context, WrappedMethod wrappedMethod, WebsocketClient websocketClient, ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance)
             {
-                if (__state == 0)
-                {
-                    if (__result != null)
-                    {
-                        return __result.Result;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-                else
-                {
-                    return __instance.OnSent.Target;
-                }
+                await wrappedMethod.CallMethodAsync(websocketClient.Slot, globalTypeLookup);
+                return __instance.OnSent.Target;
             }
 
             [HarmonyPrefix]
-            static bool Prefix(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance, FrooxEngineContext context, ref int __state)
+            static bool Prefix(ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Network.WebsocketTextMessageSender __instance, FrooxEngineContext context, ref Tuple<FrooxEngineContext, Task> __state, ref Task<IOperation> __result)
             {
-                __state = 0;
+                __state = null;
                 WebsocketClient websocketClient = __instance.Client.Evaluate(context);
                 if (websocketClient != null && websocketClient.URL.Value != null)
                 {
                     if (websocketClient.URL.Value.ToString().StartsWith(MOD_PREFIX))
                     {
-                        Msg("Got websocket with url " + websocketClient.URL);
                         if (wrappedMethods.ContainsKey(websocketClient.URL))
                         {
-                            Msg("Calling wrapped method " + wrappedMethods[websocketClient.URL]);
-                            wrappedMethods[websocketClient.URL].CallMethod(websocketClient.Slot, globalTypeLookup);
-                            __state = 1;
+                            WrappedMethod wrappedMethod = wrappedMethods[websocketClient.URL];
+                            if (wrappedMethod.isAsync)
+                            {
+                                __result = CallAsync(context, wrappedMethod, websocketClient, __instance);
+                            }
+                            else
+                            {
+                                wrappedMethod.CallMethod(websocketClient.Slot, globalTypeLookup);
+                                __result = Task.FromResult<IOperation>(__instance.OnSent.Target);
+                            }
                             return false;
                         }
                     }
