@@ -333,7 +333,7 @@ namespace ResoniteEasyFunctionWrapper
                 {
                     // Cursed stuff to call of generic type
                     MethodInfo readMethod = typeof(DynamicVariableSpace).GetMethod(nameof(space.TryReadValue));
-                    MethodInfo genericReadMethod = readMethod.MakeGenericMethod(inputVar.type);
+                    MethodInfo genericReadMethod = readMethod.MakeGenericMethod(inputVar.resoniteType);
                     // the null at second place works as an out
                     dummyParams[0] = inputVar.name;
                     dummyParams[1] = null;
